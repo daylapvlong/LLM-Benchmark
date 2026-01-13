@@ -1,0 +1,4 @@
+# Benchmark CLI Requirements
+# No external dependencies required for basic functionality
+# Python 3.7+ is required
+

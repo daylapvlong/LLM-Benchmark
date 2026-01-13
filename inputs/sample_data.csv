@@ -1,0 +1,7 @@
+id,question,response,expected
+pair_006,"What is Python?","Python is a programming language.","Python is a high-level programming language known for its simplicity."
+pair_007,"What is the speed of light?","Light travels at approximately 300,000 km/s.","The speed of light in vacuum is approximately 299,792,458 meters per second."
+pair_008,"Name a prime number.","7 is a prime number.","7"
+pair_009,"What is machine learning?","Machine learning is a subset of AI that enables computers to learn from data.","Machine learning is a branch of artificial intelligence that allows systems to learn and improve from experience without being explicitly programmed."
+pair_010,"What is the largest planet?","Jupiter is the largest planet in our solar system.","Jupiter is the largest planet in the solar system."
+
