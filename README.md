@@ -1,28 +1,100 @@
-# LLM Benchmark Project
+# Benchmark CLI
 
-A comprehensive evaluation framework for benchmarking Large Language Model (LLM) responses with automated metrics and optional human review.
-
-## Overview
-
-This project provides a modular, extensible system for evaluating LLM outputs against expected answers. It supports multiple evaluation metrics, flexible evaluation modes, and robust error handling to ensure reliable benchmarking at scale.
+A modular CLI tool for evaluating chatbot responses with automated metrics and human-in-the-loop support. **Now with automatic API fetching!**
 
 ## Features
 
 - **Multiple Evaluation Metrics**: Built-in metrics for exact matching, token overlap, length ratio, and key phrase containment
 - **Flexible Evaluation Modes**: Automated, human-only, or hybrid evaluation workflows
-- **Extensible Architecture**: Easy to add custom metrics through a clean interface
+- **Extensible Architecture**: Clean layered architecture with easy-to-add custom metrics
+- **Auto-Fetch Mode**: Automatically fetch bot responses from APIs
 - **Fault Tolerant**: Individual metric failures don't stop the evaluation process
 - **Multiple Output Formats**: Export results as JSON or CSV
 - **Human-in-the-Loop**: Optional human review with customizable scoring criteria
 - **Batch Processing**: Efficient evaluation of large datasets
 - **Detailed Reporting**: Comprehensive statistics and per-metric breakdowns
 
+## Project Structure
+
+```
+BenchmarkCLI/
+├── benchmark_cli/          # Main package
+│   ├── models/            # Data models (domain entities)
+│   │   ├── evaluation.py  # EvaluationPair, MetricResult, EvaluationResult
+│   │   └── question.py    # QuestionInput
+│   │
+│   ├── interfaces/        # User-facing interfaces
+│   │   └── cli.py         # Command-line interface
+│   │
+│   ├── services/          # Business logic services
+│   │   ├── evaluation_service.py  # Core evaluation logic
+│   │   ├── api_service.py         # API client for fetching responses
+│   │   ├── review_service.py      # Human review service
+│   │   └── fetch_service.py       # Fetch orchestration
+│   │
+│   ├── helpers/           # Utility functions
+│   │   ├── loaders.py     # Data loading utilities
+│   │   ├── reporters.py   # Result reporting utilities
+│   │   ├── response_appender.py  # File appending utilities
+│   │   └── config.py     # Configuration management
+│   │
+│   ├── metrics/           # Metrics package
+│   │   ├── base.py        # Metric interface
+│   │   ├── builtin.py     # Built-in metrics
+│   │   └── registry.py   # Metric registry
+│   │
+│   ├── auto_fetch.py      # Auto-fetch orchestration
+│   └── __init__.py        # Package exports
+│
+├── inputs/                # Input data files
+│   ├── sample_data.json   # Sample JSON data
+│   ├── sample_data.csv    # Sample CSV data
+│   └── questions.json     # Questions-only file (for auto-fetch)
+│
+├── outputs/               # Output results (auto-generated)
+├── config.json            # API configuration (create from config.json.example)
+├── config.json.example    # Configuration template
+├── main.py                # Entry point
+└── requirements.txt       # Dependencies
+```
+
+## Architecture
+
+The project follows a **layered architecture** pattern:
+
+### Layer Responsibilities
+
+1. **Models Layer** (`models/`)
+   - Domain entities and data structures
+   - Pure data classes with no business logic
+   - Examples: `EvaluationPair`, `MetricResult`, `QuestionInput`
+
+2. **Interfaces Layer** (`interfaces/`)
+   - User-facing interfaces (CLI, API endpoints)
+   - Handles user input/output and command parsing
+   - Example: `EvaluationCLI`
+
+3. **Services Layer** (`services/`)
+   - Business logic and orchestration
+   - Coordinates between models, helpers, and metrics
+   - Examples: `EvaluationService`, `APIService`, `ReviewService`
+
+4. **Helpers Layer** (`helpers/`)
+   - Utility functions and helper classes
+   - File I/O, configuration, formatting
+   - Examples: `DataLoader`, `ResultsReporter`, `Config`
+
+5. **Metrics Layer** (`metrics/`)
+   - Evaluation metrics implementation
+   - Extensible metric system with registry pattern
+   - Examples: `ExactMatchMetric`, `TokenOverlapMetric`
+
 ## Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/llm-benchmark.git
-cd llm-benchmark
+git clone <repository-url>
+cd BenchmarkCLI
 
 # Install dependencies
 pip install -r requirements.txt
@@ -30,201 +102,210 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-### 1. Prepare Your Data
+### 🚀 Auto-Fetch Mode (Default)
 
-Create an input file in JSON or CSV format:
+The tool automatically fetches bot responses from an API when configured!
 
-**JSON Format** (`data/examples.json`):
+1. **Create configuration file** (copy from `config.json.example`):
+```bash
+cp config.json.example config.json
+```
+
+2. **Edit `config.json`** with your API settings:
+```json
+{
+  "api_url": "https://your-api-endpoint.com/chat",
+  "api_key": "your-api-key",
+  "delay": 0.5,
+  "auto_fetch": true
+}
+```
+
+3. **Place question files in `inputs/` directory** (JSON or CSV with just questions):
 ```json
 [
   {
-    "id": "eval_001",
+    "id": "q1",
     "question": "What is the capital of France?",
-    "response": "The capital of France is Paris",
     "expected": "Paris"
-  },
-  {
-    "id": "eval_002",
-    "question": "What is 2+2?",
-    "response": "4",
-    "expected": "4"
   }
 ]
 ```
 
-**CSV Format** (`data/examples.csv`):
+4. **Run the tool** - it will automatically fetch responses!
+```bash
+python main.py
+```
+
+The tool will:
+- ✅ Automatically detect all files in `inputs/` directory
+- ✅ Fetch bot responses for all questions via API
+- ✅ Save results to `outputs/` directory with `_responses` suffix
+
+### Manual Evaluation Mode
+
+#### List available metrics
+```bash
+python main.py --list-metrics
+```
+
+#### Run automated evaluation
+```bash
+# Using JSON input
+python main.py inputs/sample_data.json --mode auto --output outputs/results.json
+
+# Using CSV input
+python main.py inputs/sample_data.csv --mode auto --output outputs/results.csv
+```
+
+#### Run with specific metrics
+```bash
+python main.py inputs/sample_data.json --metrics exact_match token_overlap --output outputs/results.json
+```
+
+#### Hybrid mode (auto + human review for low scores)
+```bash
+python main.py inputs/sample_data.json --mode hybrid --threshold 0.5 --output outputs/results.json
+```
+
+#### Human review mode
+```bash
+python main.py inputs/sample_data.json --mode human --output outputs/results.json
+```
+
+## Input File Formats
+
+### JSON Format (Full Evaluation Pairs)
+```json
+[
+  {
+    "id": "pair_001",
+    "question": "What is the capital of France?",
+    "response": "The capital of France is Paris.",
+    "expected": "Paris is the capital of France.",
+    "metadata": {
+      "category": "geography",
+      "difficulty": "easy"
+    }
+  }
+]
+```
+
+### CSV Format (Full Evaluation Pairs)
 ```csv
 id,question,response,expected
-eval_001,"What is the capital of France?","The capital of France is Paris","Paris"
-eval_002,"What is 2+2?","4","4"
+pair_001,"What is the capital of France?","The capital of France is Paris.","Paris is the capital of France."
 ```
 
-### 2. Run Evaluation
-
-**Automated evaluation with all metrics:**
-```bash
-python evaluate.py --input data/examples.json --mode auto
+### JSON Format (Questions Only - for Auto-Fetch)
+```json
+[
+  {
+    "id": "q1",
+    "question": "What is the capital of France?",
+    "expected": "Paris",
+    "metadata": {
+      "category": "geography"
+    }
+  }
+]
 ```
 
-**Automated evaluation with specific metrics:**
-```bash
-python evaluate.py --input data/examples.json --mode auto --metrics exact_match token_overlap
+### CSV Format (Questions Only - for Auto-Fetch)
+```csv
+id,question,expected
+q1,"What is the capital of France?","Paris"
 ```
 
-**Human-only evaluation:**
-```bash
-python evaluate.py --input data/examples.json --mode human
-```
+## Available Metrics
 
-**Hybrid evaluation (human review for low-scoring pairs):**
-```bash
-python evaluate.py --input data/examples.json --mode hybrid --threshold 0.6
-```
+- **exact_match**: Exact string match (case-insensitive)
+- **token_overlap**: Token overlap F1 score (ROUGE-like)
+- **length_ratio**: Response length similarity score
+- **key_phrase_containment**: Key phrase containment score
 
-### 3. View Results
+## Output Formats
 
-Results are saved to the `results/` directory by default:
+Results can be saved as:
+- **JSON**: Detailed results with all metric scores and details
+- **CSV**: Summary table with metric scores per evaluation pair
 
-```bash
-# View JSON results
-cat results/evaluation_results.json
-
-# View CSV summary
-cat results/evaluation_summary.csv
-```
-
-## Command Line Options
-
-```
-usage: evaluate.py [-h] --input INPUT [--output OUTPUT] [--mode {auto,human,hybrid}]
-                   [--metrics METRICS [METRICS ...]] [--threshold THRESHOLD]
-                   [--format {json,csv,both}]
-
-optional arguments:
-  -h, --help            Show this help message and exit
-  --input INPUT         Path to input JSON or CSV file
-  --output OUTPUT       Output directory for results (default: results/)
-  --mode {auto,human,hybrid}
-                        Evaluation mode (default: auto)
-  --metrics METRICS [METRICS ...]
-                        Specific metrics to run (default: all)
-  --threshold THRESHOLD
-                        Score threshold for hybrid mode (default: 0.5)
-  --format {json,csv,both}
-                        Output format (default: both)
-```
-
-## Built-in Metrics
-
-### ExactMatchMetric
-Binary check for exact string match after normalization.
-- **Score Range**: 0.0 or 1.0
-- **Use Case**: Factual answers requiring precision
-
-### TokenOverlapMetric
-Measures semantic similarity using token-level F1 score (ROUGE-like).
-- **Score Range**: 0.0 to 1.0
-- **Use Case**: Responses with same meaning but different wording
-- **Details**: precision, recall, f1, token counts
-
-### LengthRatioMetric
-Evaluates if response length is appropriate compared to expected.
-- **Score Range**: 0.0 to 1.0
-- **Use Case**: Detecting overly brief or verbose responses
-- **Details**: word counts, length ratio
-
-### ContainmentMetric
-Checks if response contains key phrases from expected answer.
-- **Score Range**: 0.0 to 1.0
-- **Use Case**: Ensuring critical concepts are present
-- **Details**: key phrases found and total
-
-## Evaluation Modes
-
-### Auto Mode
-Runs only automated metrics without human interaction.
-
-```bash
-python evaluate.py --input data.json --mode auto
-```
-
-### Human Mode
-Interactive review with scoring on four criteria (1-5 scale):
-- **Correctness**: Factual accuracy
-- **Relevance**: Alignment with question
-- **Completeness**: Coverage of expected information
-- **Tone**: Appropriateness of style
-
-```bash
-python evaluate.py --input data.json --mode human
-```
-
-### Hybrid Mode
-Combines automated and human evaluation:
-1. Runs automated metrics first
-2. Calculates average scores
-3. Prompts human review for pairs below threshold
-4. Merges results
-
-```bash
-python evaluate.py --input data.json --mode hybrid --threshold 0.6
-```
-
-## Output Format
-
-### JSON Output
-Detailed per-pair results with metric scores and breakdowns:
-
+### JSON Output Example
 ```json
 {
-  "id": "eval_001",
+  "id": "pair_001",
   "metrics": {
     "exact_match": 0.0,
-    "token_overlap": 0.857,
-    "length_ratio": 0.833,
-    "key_phrase_containment": 1.0
+    "token_overlap": 0.667,
+    "length_ratio": 1.0,
+    "key_phrase_containment": 0.75
   },
   "details": {
     "token_overlap": {
-      "precision": 0.857,
-      "recall": 0.857,
-      "f1": 0.857,
-      "overlap_tokens": 6,
-      "response_tokens": 7,
-      "expected_tokens": 7
+      "precision": 0.667,
+      "recall": 0.667,
+      "f1": 0.667
     }
   },
   "human_scores": {
-    "correctness": 5,
-    "relevance": 5,
-    "completeness": 4,
-    "tone": 5
+    "correctness": 4,
+    "relevance": 5
   }
 }
 ```
 
-### CSV Output
-Tabular format for easy analysis:
+## Auto-Fetch Configuration
 
-```csv
-id,exact_match,token_overlap,length_ratio,containment,correctness,relevance,completeness,tone
-eval_001,0.0,0.857,0.833,1.0,5,5,4,5
-eval_002,1.0,1.0,1.0,1.0,5,5,5,5
+### Environment Variables Alternative
+
+Instead of `config.json`, you can use environment variables:
+
+```bash
+export API_URL="https://api.example.com/chat"
+export API_KEY="your-api-key"
+export API_DELAY="0.5"
+python main.py
 ```
 
-### Summary Statistics
-Automatically calculated for each metric:
-- Mean
-- Min
-- Max
-- Standard Deviation
+### API Response Format
+
+The API client expects one of these response formats:
+- `{"response": "..."}`
+- `{"answer": "..."}`
+- `{"text": "..."}`
+- Or a plain string response
+
+## Command Line Options
+
+```
+usage: main.py [-h] [--mode {auto,human,hybrid}] [--metrics METRICS [METRICS ...]]
+               [--threshold THRESHOLD] [--output OUTPUT] [--list-metrics]
+               [--verbose] [--no-expected] [input_file]
+
+positional arguments:
+  input_file            Input file (JSON or CSV) with evaluation pairs
+
+options:
+  -h, --help            show this help message and exit
+  --mode {auto,human,hybrid}
+                        Evaluation mode (default: auto)
+  --metrics METRICS [METRICS ...]
+                        Specific metrics to use (default: all)
+  --threshold THRESHOLD
+                        Score threshold for human review in hybrid mode
+  --output, -o OUTPUT   Output file path (JSON or CSV)
+  --list-metrics        List available metrics and exit
+  --verbose, -v         Enable verbose logging
+  --no-expected         Hide expected answers during human review
+```
 
 ## Adding Custom Metrics
 
 Create a new metric by implementing the `Metric` interface:
 
 ```python
-from metrics.base import Metric, MetricResult
+from benchmark_cli.metrics.base import Metric
+from benchmark_cli.models.evaluation import MetricResult
 
 class CustomMetric(Metric):
     @property
@@ -242,42 +323,63 @@ class CustomMetric(Metric):
         )
 
 # Register your metric
-from metrics.registry import MetricRegistry
-MetricRegistry.register(CustomMetric())
+from benchmark_cli.metrics.registry import MetricRegistry
+registry = MetricRegistry()
+registry.register(CustomMetric())
 ```
 
-## Project Structure
+## Evaluation Modes
 
+### Auto Mode
+Runs only automated metrics without human interaction.
+
+```bash
+python main.py inputs/data.json --mode auto --output outputs/results.json
 ```
-llm-benchmark/
-├── data/                   # Input data files
-│   └── examples.json
-├── results/                # Output results
-│   ├── evaluation_results.json
-│   └── evaluation_summary.csv
-├── metrics/                # Metric implementations
-│   ├── __init__.py
-│   ├── base.py            # Metric interface
-│   ├── exact_match.py
-│   ├── token_overlap.py
-│   ├── length_ratio.py
-│   ├── containment.py
-│   └── registry.py        # Metric registration
-├── core/                   # Core evaluation logic
-│   ├── __init__.py
-│   ├── data_loader.py     # Input data loading
-│   ├── evaluation_engine.py
-│   ├── models.py          # Data models
-│   └── reporter.py        # Results reporting
-├── evaluate.py             # Main entry point
-├── requirements.txt
-└── README.md
+
+### Human Mode
+Interactive review with scoring on four criteria (1-5 scale):
+- **Correctness**: Factual accuracy
+- **Relevance**: Alignment with question
+- **Completeness**: Coverage of expected information
+- **Tone**: Appropriateness of style
+
+```bash
+python main.py inputs/data.json --mode human --output outputs/results.json
+```
+
+### Hybrid Mode
+Combines automated and human evaluation:
+1. Runs automated metrics first
+2. Calculates average scores
+3. Prompts human review for pairs below threshold
+4. Merges results
+
+```bash
+python main.py inputs/data.json --mode hybrid --threshold 0.6 --output outputs/results.json
+```
+
+## Sample Data
+
+The `inputs/` directory contains sample data files for testing:
+- `sample_data.json`: 5 evaluation pairs in JSON format
+- `sample_data.csv`: 5 evaluation pairs in CSV format
+- `questions.json`: Questions-only file for auto-fetch testing
+
+You can use these files to test the tool:
+```bash
+# Auto-fetch mode (if config.json exists)
+python main.py
+
+# Manual evaluation mode
+python main.py inputs/sample_data.json --mode auto --output outputs/test.json
 ```
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.7+
 - Dependencies listed in `requirements.txt`
+  - `requests>=2.31.0` (for API functionality)
 
 ## Use Cases
 
@@ -286,41 +388,33 @@ llm-benchmark/
 - **Quality Assurance**: Validate responses before production deployment
 - **Regression Testing**: Ensure updates don't degrade performance
 - **Benchmarking**: Compare your LLM against standard datasets
+- **Automated Testing**: Continuous evaluation with API integration
 
-## Examples
+## Development
 
-### Example 1: Quick Evaluation
+### Project Structure Benefits
 
-```bash
-# Run all metrics on a small dataset
-python evaluate.py --input data/quick_test.json --mode auto
-```
+The layered architecture provides:
+- **Clear Separation of Concerns**: Each layer has a specific responsibility
+- **Easy Navigation**: Find code quickly by layer
+- **Better Testability**: Services can be easily mocked
+- **Scalability**: Easy to add new features without affecting other layers
+- **Maintainability**: Changes are localized to specific layers
 
-### Example 2: Focused Metric Analysis
+### Extending the System
 
-```bash
-# Only run token overlap and containment metrics
-python evaluate.py --input data/semantic_test.json \
-                   --metrics token_overlap key_phrase_containment \
-                   --format json
-```
+1. **Add a new metric**: Implement `Metric` interface in `metrics/`
+2. **Add a new service**: Create service class in `services/`
+3. **Add a new helper**: Add utility function in `helpers/`
+4. **Add a new interface**: Create interface in `interfaces/`
 
-### Example 3: Quality Control Pipeline
+## License
 
-```bash
-# Automated evaluation with human review for problem cases
-python evaluate.py --input data/production_responses.json \
-                   --mode hybrid \
-                   --threshold 0.7 \
-                   --output results/qa_review/
+[Your License Here]
 
-## Acknowledgments
-- Inspired by ROUGE and BLEU evaluation metrics
-- Built for practical LLM evaluation workflows
-- Designed with extensibility and fault tolerance in mind
+## Contributing
 
-## Support
-For questions, issues, or feature requests, please open an issue on GitHub or contact the maintainers.
+[Your Contributing Guidelines Here]
 
 ---
 
