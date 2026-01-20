@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Dict, Any
 import logging
 
-from benchmark_cli.models import EvaluationResult
+from benchmark_cli.models.evaluation import EvaluationResult
 
 logger = logging.getLogger(__name__)
 
@@ -144,4 +144,3 @@ class ResultsReporter:
             ResultsReporter.save_to_csv(results, filepath)
         else:
             raise ValueError(f"Unsupported file format: {suffix}. Use .json or .csv")
-

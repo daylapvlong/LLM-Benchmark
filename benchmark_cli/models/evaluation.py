@@ -1,5 +1,5 @@
 """
-Data models for evaluation pairs and results.
+Evaluation data models.
 """
 
 from dataclasses import dataclass
@@ -37,4 +37,3 @@ class EvaluationResult:
         if self.human_scores:
             summary.update({k: v for k, v in self.human_scores.items() if isinstance(v, (int, float))})
         return summary
-

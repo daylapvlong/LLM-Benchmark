@@ -1,17 +1,17 @@
 """
-Human-in-the-loop review interfaces.
+Human-in-the-loop review service.
 """
 
 from typing import List, Dict, Any, Optional
 import logging
 
-from benchmark_cli.models import EvaluationPair, EvaluationResult
+from benchmark_cli.models.evaluation import EvaluationPair, EvaluationResult
 
 logger = logging.getLogger(__name__)
 
 
-class HumanReviewer:
-    """Interactive human review interface."""
+class ReviewService:
+    """Interactive human review service."""
     
     CRITERIA = {
         "correctness": "Is the response factually correct? (1-5)",
@@ -114,4 +114,3 @@ class HumanReviewer:
                 break
         
         return human_scores
-

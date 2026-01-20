@@ -7,12 +7,12 @@ import logging
 import sys
 from pathlib import Path
 
-from benchmark_cli.models import EvaluationResult
+from benchmark_cli.models.evaluation import EvaluationResult
 from benchmark_cli.metrics.registry import MetricRegistry
-from benchmark_cli.engine import EvaluationEngine
-from benchmark_cli.loaders import DataLoader
-from benchmark_cli.reporters import ResultsReporter
-from benchmark_cli.reviewers import HumanReviewer
+from benchmark_cli.services.evaluation_service import EvaluationService
+from benchmark_cli.helpers.loaders import DataLoader
+from benchmark_cli.helpers.reporters import ResultsReporter
+from benchmark_cli.services.review_service import ReviewService
 
 
 def setup_logging(verbose: bool = False):
@@ -31,8 +31,8 @@ class EvaluationCLI:
     def __init__(self):
         """Initialize CLI components."""
         self.registry = MetricRegistry()
-        self.engine = EvaluationEngine(self.registry)
-        self.reviewer = HumanReviewer()
+        self.evaluation_service = EvaluationService(self.registry)
+        self.review_service = ReviewService()
         self.reporter = ResultsReporter()
     
     def run(self):
@@ -144,13 +144,13 @@ Examples:
         
         if args.mode in ['auto', 'hybrid']:
             print(f"\nRunning automated evaluation...")
-            results = self.engine.evaluate_batch(pairs, args.metrics)
+            results = self.evaluation_service.evaluate_batch(pairs, args.metrics)
             self.reporter.print_summary(results)
         
         if args.mode in ['human', 'hybrid']:
             print(f"\nStarting human review mode...")
             try:
-                human_scores = self.reviewer.review_batch(
+                human_scores = self.review_service.review_batch(
                     pairs,
                     show_expected=not args.no_expected,
                     threshold=args.threshold if args.mode == 'hybrid' else None,
@@ -191,4 +191,3 @@ Examples:
                 sys.exit(1)
         elif args.mode == 'auto':
             print("\nNote: Use --output to save results to a file")
-

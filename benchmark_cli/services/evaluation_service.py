@@ -1,21 +1,21 @@
 """
-Evaluation engine for running metrics on evaluation pairs.
+Evaluation service for running metrics on evaluation pairs.
 """
 
 from typing import List, Optional
 import logging
 
-from benchmark_cli.models import EvaluationPair, EvaluationResult
+from benchmark_cli.models.evaluation import EvaluationPair, EvaluationResult
 from benchmark_cli.metrics.registry import MetricRegistry
 
 logger = logging.getLogger(__name__)
 
 
-class EvaluationEngine:
-    """Core evaluation engine."""
+class EvaluationService:
+    """Core evaluation service."""
     
     def __init__(self, registry: MetricRegistry):
-        """Initialize evaluation engine.
+        """Initialize evaluation service.
         
         Args:
             registry: Metric registry containing available metrics
@@ -79,4 +79,3 @@ class EvaluationEngine:
         """
         logger.info(f"Evaluating {len(pairs)} pairs")
         return [self.evaluate_pair(pair, metric_names) for pair in pairs]
-
